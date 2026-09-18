@@ -1,0 +1,21 @@
+# Gradle
+.gradle/
+build/
+
+# IDE / 编译输出
+bin/
+out/
+*.iml
+.idea/
+.vscode/
+.classpath
+.project
+.settings/
+
+# MC 运行时目录
+run/
+eclipse/
+
+# 系统文件
+Thumbs.db
+.DS_Store

@@ -1,0 +1,111 @@
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:3.0.197'
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+
+// 版本号规则：0.<major>.<minor> —— 第一个 x = 大更新（新功能），第二个 x = 小更新 / bug 修复。
+// 每次发布（修改后导出 jar）都必须按此规则递增版本，两处同步：本行 + TeamytzRPG.VERSION。
+version = "0.1.22"
+group = "com.teamytz.teamytzrpg"
+archivesBaseName = "teamytzrpg"
+
+sourceCompatibility = targetCompatibility = '1.8'
+
+// 中文源码/资源：显式钉 UTF-8，避免中文 Windows 上 javac 默认 GBK 乱码。
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+minecraft {
+    // MCP 快照映射：snapshot 20171003-1.12（按线钉选）。
+    mappings channel: 'snapshot', version: '20171003-1.12'
+    runs {
+        client {
+            workingDirectory project.file('run')
+        }
+        server {
+            workingDirectory project.file('run')
+        }
+    }
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2860'
+    // FTB Quests 联动（可选）：运行时软依赖，编译期引用其 API。
+    // libs/ 下为本地测试实例同款 jar（含 FTBQuests 源码目录 FTB-Quests-1.12 供查阅）。
+    compileOnly files(
+            'libs/FTBQuests-1202.9.0.15.jar',
+            'libs/FTBLib-5.4.7.2.jar',
+            'libs/DynamicStealth-1.12.2.120.jar',
+            'libs/FantasticLib-1.12.2.070.jar'
+    )
+}
+
+// 把 version/mcversion 展开进 mcmod.info（MDK 原样，${version}/${mcversion} 不能字面出包）。
+processResources {
+    inputs.property "version", project.version
+    inputs.property "mcversion", "1.12.2"
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+        expand 'version': project.version, 'mcversion': '1.12.2'
+    }
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}
+
+// 产物必须 reobf 成 SRG 名才能被 Forge 加载；build 完成后自动部署到测试实例。
+jar {
+    finalizedBy('reobfJar')
+    finalizedBy('deployToTest')
+}
+
+// ---------------------------------------------------------------------------
+// 本地测试实例部署（PCL 版本隔离）：每次 build 完成后自动执行 deployToTest，
+// 删除测试实例 mods 目录里的旧 teamytzrpg-*.jar，再复制新的产物进去。
+// build/libs 里的历史产物保留不删（手动 clean 才会清）。
+// 兼容性测试实例(含 techguns/dynamicstealth/tgceaddon):
+//   S:\mc\pack\1.12.2\Journey_watch\.minecraft\versions\tgaddontest
+// 跳过本次部署: gradlew build -x deployToTest
+// ---------------------------------------------------------------------------
+def testInstanceModsDir = 'S:/mc/pack/1.12.2/Journey_watch/.minecraft/versions/tgaddontest/mods'
+
+task deployToTest {
+    description = '把 reobf 后的 jar 部署到本地测试实例（删旧 + 复制）'
+    group = 'minecraft'
+    // 依赖 reobfJar：保证复制的是 reobf 后的最终产物（reobf 失败时本任务自动跳过）。
+    dependsOn 'reobfJar'
+    doLast {
+        def produced = file("${project.buildDir}/libs/${archivesBaseName}-${project.version}.jar")
+        if (!produced.exists()) {
+            throw new GradleException('产物不存在，请先 build: ' + produced)
+        }
+        def targetDir = file(testInstanceModsDir)
+        if (!targetDir.isDirectory()) {
+            throw new GradleException('测试实例 mods 目录不存在: ' + targetDir)
+        }
+        def removed = []
+        targetDir.eachFileMatch(~/^${archivesBaseName}-.*\.jar$/) { f ->
+            if (f.delete()) {
+                removed << f.name
+            } else {
+                println "警告: 无法删除(可能被占用): " + f
+            }
+        }
+        def copied = new File(targetDir, produced.name)
+        produced.withInputStream { ins -> copied.withOutputStream { ous ->
+            byte[] buf = new byte[8192]
+            int n
+            while ((n = ins.read(buf)) > 0) ous.write(buf, 0, n)
+        } }
+        println "已部署 ${produced.name} -> ${targetDir}"
+        println "已删除旧文件: ${removed}"
+    }
+}

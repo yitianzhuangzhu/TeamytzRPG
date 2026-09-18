@@ -1,0 +1,11 @@
+[
+{
+  "modid": "dynamicstealth",
+  "name": "Dynamic Stealth",
+  "description": "You can now *actually sneak around* (accounts for FOV, distance, lighting...)",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "authorList": ["Laike_Endaril"],
+  "credits": "\nLordPhrozen (art)\nelon_maxs (art)\nPhorcis (Russian translation)\nTommsy64 (Various Improvements)\nPurple Print (Bacchanalian Mobs compat)"
+}
+]

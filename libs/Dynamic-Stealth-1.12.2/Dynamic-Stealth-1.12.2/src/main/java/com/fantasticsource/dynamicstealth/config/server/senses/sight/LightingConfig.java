@@ -1,0 +1,105 @@
+package com.fantasticsource.dynamicstealth.config.server.senses.sight;
+
+import com.fantasticsource.dynamicstealth.DynamicStealth;
+import net.minecraftforge.common.config.Config;
+
+public class LightingConfig
+{
+    @Config.Name("000 Light Level (High/Bright)")
+    @Config.LangKey(DynamicStealth.MODID + ".config.lightLevelHigh")
+    @Config.Comment("At or above this light level, entities receive the maximum light level multiplier")
+    @Config.RangeInt(min = 0, max = 15)
+    public int lightLevelHigh = 11;
+
+    @Config.Name("020 Multiplier (High/Bright)")
+    @Config.LangKey(DynamicStealth.MODID + ".config.lightMultHigh")
+    @Config.Comment(
+            {
+                    "The light level visibility multiplier when standing in bright areas",
+                    "0 means invisible, 1 means fully visible (other factors not accounted for)"
+            })
+    @Config.RangeDouble(min = 0, max = 1)
+    public double lightMultHigh = 1;
+
+    @Config.Name("040 Light Level (Low/Dark)")
+    @Config.LangKey(DynamicStealth.MODID + ".config.lightLevelLow")
+    @Config.Comment("At or below this light level, entities receive the minimum light level multiplier")
+    @Config.RangeInt(min = 0, max = 15)
+    public int lightLevelLow = 0;
+
+    @Config.Name("060 Multiplier (Low/Dark)")
+    @Config.LangKey(DynamicStealth.MODID + ".config.lightMultLow")
+    @Config.Comment(
+            {
+                    "The light level visibility multiplier when standing in dark areas",
+                    "0 means invisible, 1 means fully visible (other factors not accounted for)"
+            })
+    @Config.RangeDouble(min = 0, max = 1)
+    public double lightMultLow = 0.1;
+
+    @Config.Name("080 Nightvision Bonus")
+    @Config.LangKey(DynamicStealth.MODID + ".config.nightvisionBonus")
+    @Config.Comment("When an entity has the nightvision effect, this value is added to their perceived light levels (and then set to 15 if larger than 15)")
+    @Config.RangeInt(min = 0, max = 15)
+    public int nightvisionBonus = 15;
+
+
+    @Config.Name("0910 Dimension Sunlight Levels")
+    @Config.LangKey(DynamicStealth.MODID + ".config.dimensionSunlightLevels")
+    @Config.Comment(
+            {
+                    "How bright DS considers a dimension's sun to be during the day",
+                    "The 1st number is the dimension id, the 2nd is the sunlight level",
+                    "2nd number values should be from 0 to 15, eg...",
+                    "0, 13",
+                    "If not specified, defaults to 15 for worlds with sky light, and 0 for worlds without"
+            })
+    public String[] z_0910_dimensionSunlightLevels = new String[]
+            {
+            };
+
+    @Config.Name("0930 Minimum Dimension Moonlight Levels")
+    @Config.LangKey(DynamicStealth.MODID + ".config.minimumDimensionMoonlightLevels")
+    @Config.Comment(
+            {
+                    "How bright DS considers a dimension's moon to be during a new moon (dark moon)",
+                    "The 1st number is the dimension id, the 2nd is the moonlight level",
+                    "2nd number values should be from 0 to 15, eg...",
+                    "0, 0",
+                    "If not specified, defaults to 2 for worlds with sky light, and 0 for worlds without"
+            })
+    public String[] z_0930_minimumDimensionMoonlightLevels = new String[]
+            {
+            };
+
+    @Config.Name("0940 Maximum Dimension Moonlight Levels")
+    @Config.LangKey(DynamicStealth.MODID + ".config.maximumDimensionMoonlightLevels")
+    @Config.Comment(
+            {
+                    "How bright DS considers a dimension's moon to be during a full moon (bright moon)",
+                    "The 1st number is the dimension id, the 2nd is the moonlight level",
+                    "2nd number values should be from 0 to 15, eg...",
+                    "0, 10",
+                    "If not specified, defaults to 7 for worlds with sky light, and 0 for worlds without"
+            })
+    public String[] z_0940_maximumDimensionMoonlightLevels = new String[]
+            {
+            };
+
+    @Config.Name("Minimum Dimension Light Levels")
+    @Config.LangKey(DynamicStealth.MODID + ".config.minimumDimensionLightLevels")
+    @Config.Comment(
+            {
+                    "The minimum light level Dynamic Stealth will detect when in a given dimension",
+                    "These are mostly for dimensions with ambient lighting (eg. the nether and the end)",
+                    "The 1st number is the dimension id, the 2nd is the minimum light level for that dimension",
+                    "2nd number values should be from 0 to 15, eg...",
+                    "0, 9"
+            })
+    public String[] z_minimumDimensionLightLevels = new String[]
+            {
+                    "0, 0",
+                    "-1, 7",
+                    "1, 8"
+            };
+}

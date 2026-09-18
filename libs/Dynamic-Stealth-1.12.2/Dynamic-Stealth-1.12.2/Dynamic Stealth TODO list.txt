@@ -1,0 +1,196 @@
+NOTES =======================================================================================================================================================================================================================
+
+If it complains about a missing class from another mod when running in IDE, try setting that mod's library settings to "provided"
+
+
+
+CURRENTLY WORKING ON ========================================================================================================================================================================================================
+
+Finish the render for my server-side dynamic light mod and link into it
+
+Should soul sight show in threat colors?  Would require network change
+
+Populate or calculate "bright" entities based on Entity.getBrightness?
+
+Add touch (orange) and damage (red) indicators to HUD (save direction it came from, not position)
+Use touch attributes for BOTH (damage indicators only hidden if "unfeeling")
+
+Add ally groups for helper system config
+
+Mob flee speeds...
+...fine-tune
+...add config for general multiplier
+...add config for entity-specific flee speeds
+
+
+
+BUG FIXES ===================================================================================================================================================================================================================
+
+Fix animation handling when an entity starts being tracked; Animania's sleeping animation, the normal death animation, etc.
+
+Mobs in desperation mode can be put into flee mode by hitting them...
+...fix by adding desperation timer?
+
+Spider riders sometimes move really fast...is that normal?...
+...comes from skeleton, not spider (removed all AI from spiders and it still happened)
+...may have something to do with EntityMoveHelper or a subclass
+
+Fix entities being able to attack through glass due to same raytrace being used for attacks and vision...
+...is there some method used in all melee attacks that I can inject a raytrace into?
+Fix entities attempting to path through diagonal walls; this may very well fix (or at least mostly fix) the issue below
+Fix entities being able to attack through glass diagonally (because they can see through it...)
+...fixing pathing should also fix some cases for "can't reach" since it relies on accurate pathing
+
+Make stuck detection account for jumping by allowing for more play along y axis
+
+Fix held items not following entity fading
+
+
+
+GENERAL IMPROVEMENTS, SYSTEMS, AND FEATURES =================================================================================================================================================================================
+
+Add pickpocketing (and related alert systems)
+...config to enable/disable entire system
+...item filter config for difficulty to pickpocket items
+
+Add support for players by name in entity-specific settings
+
+Better potion handling on death (currently in LivingDropsEvent)...
+...config list for potions
+...config for whether list is blacklist or whitelist
+
+Do more tests with large entities
+
+Should the upper light limit and/or light level scaling of dimensions be changed as well...?
+...at max light level, do blocks look brighter/darker in nether and end, or the same as overworld?
+...at light levels between the "ambient" level and max light level, do blocks look brighter/darker in nether and end, or the same as overworld?
+
+Alternate sneak mode, so as not to trigger "don't step off edge", ebwizardry staff spell selection, hooked grapple prevention, etc
+
+Make client acquire target for any entity they have LOS to, then get the data for it from the map, as late as possible, if it exists
+"Lock Target" key (press to lock/unlock current target)
+...when target is locked, send target to server, which then allows you to see hud data even if it's far away
+"Aim Assist" key (hold to automatically face current target)
+
+Directional indicators...
+...add optional "damaged from" indicator, which draws an indicator pointing the direction damage was recently received from
+...add optional touch detection indicator for players (see to do in DynamicStealth.java)
+
+Add lang keys for all println() calls (make sure to use deprecated I18n, not the non-deprecated one)
+
+"Noisiness" block trait; block filter to determine how much noise walking/running/landing makes
+
+"Footprint Duration" block trait; block filter for how long visible footprints/tracks last on the block type.  Add (long to short); clay, snow, sand, mycelium, dirt, coarse dirt, podzol
+
+Add disguise system and change mob heads so they use it instead
+Add other mob heads to disguise system
+
+
+
+KEYBOUND ACTIONS ============================================================================================================================================================================================================
+
+Attempt Stealth / Don't Attempt Stealth (if set to "Don't Attempt Stealth", you are very easy for things to notice)
+Wave (decrease visual stealth for 1 second)
+Whisper (make a small noise; altered villager conversation sound?)
+Yell (make a loud noise; hurt sound?)
+Prone/unprone - has a charge time; when prone, you are stealthier, slower, have a lower POV, have a smaller hitbox (can move through 1b high areas), and cannot jump/dodge/sneak
+Find pebble?
+
+
+
+CONFIG ======================================================================================================================================================================================================================
+
+Add entity-specific filter for OPHUD
+Add entity-specific filter for targeting HUD
+
+
+
+Add keybinds for turning certain client config settings on/off...
+...stealth gauge
+...targeting HUD
+...OPHUD
+...light gauge
+
+Make the difference between "barely unseen" and "barely seen" on the stealth gauge more noticeable...
+...Change from using 1 color for stealth gauge to using 4 colors; 2 for a gradient from full stealth to barely unseen, and 2 for a gradient from barely seen to maximum visibility
+
+
+
+SENSES ======================================================================================================================================================================================================================
+
+Add scent-based detection (wolves, cats, bears)
+...Add the ability for entities to smell not only other living entities, but also ground items, etc.
+Apply stealth-based scent attributes
+
+Do sound mappings in library
+Add sound-based detection
+Apply stealth-based sound attributes
+
+
+
+STATUS EFFECTS ==============================================================================================================================================================================================================
+
+Keen Nose: Get visible indicators for scents and scent trails
+Silenced: Cannot warn others
+Deafened: Cannot hear
+Fear: Makes them flee
+Courage: Applies rally effect if they were fleeing; grants immunity to fleeing for the duration
+
+
+
+BLOCKS ======================================================================================================================================================================================================================
+
+Pitfall: Entity which destroys the dirt block it's on if something walks on it.
+
+
+
+ITEMS =======================================================================================================================================================================================================================
+
+Edit normal, splash, and lingering water potions so that they remove burning
+
+Fire potions, for burning effect
+
+Trap ENTITIES...
+...Pitfall
+...Dispenser Trap (holds a single item)
+
+Make sticks throwable (act like snowballs; 0 damage projectile, but if they hit a block, then instead create small sound.  Either way, drop as stick item again)
+
+Pebbles - Can be thrown as a 0 damage projectile like a snowball, but drops as an item again on impact.  Crafted from cobblestone
+
+Make firework stars throwable; they go off after a short delay, or if in water, drop as an item again
+
+Slingshot - Can fire pebbles, smoke bombs, splash/lingering potions, or firework stars as low-damage projectiles
+
+Guidebook, possibly using guide api or patchouli
+
+
+
+MOBS ========================================================================================================================================================================================================================
+
+Gray Men...
+...Gray men are considered invisible if you are facing them directly
+...When they were visible, but are no longer visible, stop sending updates to client, but *don't* tell client to remove them; this should cause an illusion that they are holding still
+
+
+
+MOD COMPATIBILITY ===========================================================================================================================================================================================================
+
+Better Portals angle is not synced when looking through portals
+Non-players cannot seem to see through portals with Better Portals installed (this happens with or without DS installed though)
+What would happen if I were to alter the raytrace to go through portals when Better Portals is installed?  (would also need to bypass world equality checks elsewhere, and change portal material in LOS so it doesn't block sight anymore when better portals is installed)
+
+Set Bonus integration for stealth attacks and assassinations
+
+Lycanite's Mobs can still attack through walls; probably using different LOS
+
+Zombie Awareness (after all senses are done; even then, might need to make an API and have Corosis do the rest from his side)
+
+Some TiC weapons don't trigger assassination for some reason...
+...maybe one of the bonus damage things is interfering?
+...the one I had this happen with had cold blooded, insatiable, a bone handle, flaming (blaze powder modifier)
+...not from diamond or sharp (quartz)
+
+Check Grimoire of Gaia compat
+
+Check Epic Siege compat

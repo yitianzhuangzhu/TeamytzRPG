@@ -1,0 +1,301 @@
+package com.fantasticsource.dynamicstealth;
+
+import com.fantasticsource.dynamicstealth.server.senses.HidingData;
+import com.fantasticsource.dynamicstealth.server.threat.Threat;
+import com.fantasticsource.mctools.PlayerData;
+import net.minecraft.command.CommandBase;
+import net.minecraft.command.ICommandSender;
+import net.minecraft.command.PlayerNotFoundException;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.translation.I18n;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+
+import javax.annotation.Nullable;
+import java.util.*;
+
+import static net.minecraft.util.text.TextFormatting.AQUA;
+import static net.minecraft.util.text.TextFormatting.WHITE;
+
+public class Commands extends CommandBase
+{
+    public static final HashSet<EntityPlayerMP> listWatchers = new HashSet<>();
+
+
+    @Override
+    public String getName()
+    {
+        return "dstealth";
+    }
+
+    @Override
+    public boolean checkPermission(MinecraftServer server, ICommandSender sender)
+    {
+        return true;
+    }
+
+    public int getRequiredPermissionLevel()
+    {
+        return 0;
+    }
+
+    @Override
+    public String getUsage(ICommandSender sender)
+    {
+        if (sender.canUseCommand(2, getName()))
+        {
+            return AQUA + "/dstealth threat <entity UUID> <target entity UUID> <amount>" + WHITE + " - " + I18n.translateToLocalFormatted(DynamicStealth.MODID + ".cmd.threat.comment") + "\n" +
+                    AQUA + "/dstealth watchers" + WHITE + " - " + I18n.translateToLocalFormatted(DynamicStealth.MODID + ".cmd.watchers.comment") + "\n" +
+
+                    AQUA + "/dstealth creativeinvis <t/f/true/false>" + WHITE + " - " + I18n.translateToLocalFormatted(DynamicStealth.MODID + ".cmd.creativeinvis.comment") + "\n" +
+
+                    AQUA + "/dstealth hidefrom <playername> <t/f/true/false>" + WHITE + " - " + I18n.translateToLocalFormatted(DynamicStealth.MODID + ".cmd.hidefromPlayerTF.comment") + "\n" +
+                    AQUA + "/dstealth hidefrom <playername>" + WHITE + " - " + I18n.translateToLocalFormatted(DynamicStealth.MODID + ".cmd.hidefromPlayer.comment") + "\n" +
+                    AQUA + "/dstealth hidefrom" + WHITE + " - " + I18n.translateToLocalFormatted(DynamicStealth.MODID + ".cmd.hidefrom.comment");
+        }
+        else
+        {
+            return AQUA + "/dstealth creativeinvis <t/f/true/false>" + WHITE + " - " + I18n.translateToLocalFormatted(DynamicStealth.MODID + ".cmd.creativeinvis.comment") + "\n" +
+
+                    AQUA + "/dstealth hidefrom <playername> <t/f/true/false>" + WHITE + " - " + I18n.translateToLocalFormatted(DynamicStealth.MODID + ".cmd.hidefromPlayerTF.comment") + "\n" +
+                    AQUA + "/dstealth hidefrom <playername>" + WHITE + " - " + I18n.translateToLocalFormatted(DynamicStealth.MODID + ".cmd.hidefromPlayer.comment") + "\n" +
+                    AQUA + "/dstealth hidefrom" + WHITE + " - " + I18n.translateToLocalFormatted(DynamicStealth.MODID + ".cmd.hidefrom.comment");
+        }
+    }
+
+    public void execute(MinecraftServer server, ICommandSender sender, String[] args)
+    {
+        if (args.length == 0) sender.getCommandSenderEntity().sendMessage(new TextComponentString(getUsage(sender)));
+        else subCommand(sender, args);
+    }
+
+    public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos targetPos)
+    {
+        ArrayList<String> result = new ArrayList<>();
+
+        String partial = args[args.length - 1];
+        if (args.length == 1)
+        {
+            if (sender.canUseCommand(2, getName()))
+            {
+                result.add("threat");
+                result.add("watchers");
+            }
+            result.add("creativeinvis");
+            result.add("hidefrom");
+
+            if (partial.length() != 0) result.removeIf(k -> partial.length() > k.length() || !k.substring(0, partial.length()).equalsIgnoreCase(partial));
+        }
+        else if (args.length == 2)
+        {
+            if (args[0].equals("hidefrom"))
+            {
+                result.addAll(Arrays.asList(FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getOnlinePlayerNames()));
+
+                for (PlayerData data : PlayerData.playerData.values())
+                {
+                    if (!result.contains(data.name)) result.add(data.name);
+                }
+
+                if (partial.length() != 0) result.removeIf(k -> partial.length() > k.length() || !k.substring(0, partial.length()).equalsIgnoreCase(partial));
+            }
+            else if (args[0].equals("creativeinvis"))
+            {
+                result.add("true");
+                result.add("false");
+
+                if (partial.length() != 0) result.removeIf(k -> partial.length() > k.length() || !k.substring(0, partial.length()).equalsIgnoreCase(partial));
+            }
+        }
+        else if (args.length == 3)
+        {
+            if (args[0].equals("hidefrom"))
+            {
+                result.add("true");
+                result.add("false");
+
+                if (partial.length() != 0) result.removeIf(k -> partial.length() > k.length() || !k.substring(0, partial.length()).equalsIgnoreCase(partial));
+            }
+        }
+        return result;
+    }
+
+    private void subCommand(ICommandSender sender, String[] args)
+    {
+        String cmd = args[0];
+        switch (cmd)
+        {
+            case "creativeinvis":
+                try
+                {
+                    EntityPlayer player = getCommandSenderAsPlayer(sender);
+                    if (args.length == 1)
+                    {
+                        if (HidingData.isCreativeInvis(player)) notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.creativeinvisIsTrue");
+                        else notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.creativeinvisIsFalse");
+                    }
+                    else
+                    {
+                        String s = args[1].toLowerCase();
+                        if (s.equals("t") || s.equals("true"))
+                        {
+                            if (HidingData.isCreativeInvis(player)) notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.creativeinvisTrue");
+                            else
+                            {
+                                HidingData.setCreativeInvis(player, true);
+                                notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.creativeinvisSetTrue");
+                            }
+                        }
+                        else if (s.equals("f") || s.equals("false"))
+                        {
+                            if (!HidingData.isCreativeInvis(player)) notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.creativeinvisFalse");
+                            else
+                            {
+                                HidingData.setCreativeInvis(player, false);
+                                notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.creativeinvisSetFalse");
+                            }
+                        }
+                        else
+                        {
+                            notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.creativeinvisTFError");
+                        }
+                    }
+                }
+                catch (PlayerNotFoundException e)
+                {
+                    e.printStackTrace();
+                }
+                break;
+
+
+            case "hidefrom":
+                try
+                {
+                    EntityPlayer player = getCommandSenderAsPlayer(sender);
+                    if (args.length == 1)
+                    {
+                        HashSet<UUID> set = HidingData.hidingData.computeIfAbsent(player.getPersistentID(), k -> new HidingData(player, true)).notHidingFrom;
+                        if (set.size() == 0) notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.hidefromEmpty");
+                        else
+                        {
+                            StringBuilder textList = new StringBuilder();
+                            for (UUID id : set)
+                            {
+                                String name = PlayerData.getName(id);
+                                if (name != null) textList.append("\n§e").append(name);
+                            }
+                            notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.hidefrom", textList.toString());
+                        }
+                    }
+                    else if (args.length == 2)
+                    {
+                        if (HidingData.isHidingFrom(player, args[1])) notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.hidefromPlayerTrue", args[1]);
+                        else notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.hidefromPlayerFalse", args[1]);
+                    }
+                    else
+                    {
+                        String s = args[2].toLowerCase();
+                        if (s.equals("t") || s.equals("true"))
+                        {
+                            if (HidingData.isHidingFrom(player, args[1])) notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.hidefromPlayerTrue", args[1]);
+                            else
+                            {
+                                HidingData.hideFrom(player, args[1], true);
+                                notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.hidefromPlayerSetTrue", args[1]);
+                            }
+                        }
+                        else if (s.equals("f") || s.equals("false"))
+                        {
+                            if (!HidingData.isHidingFrom(player, args[1])) notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.hidefromPlayerFalse", args[1]);
+                            else
+                            {
+                                HidingData.hideFrom(player, args[1], false);
+                                notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.hidefromPlayerSetFalse", args[1]);
+                            }
+                        }
+                        else
+                        {
+                            notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.hidefromPlayerTFError");
+                        }
+                    }
+                }
+                catch (PlayerNotFoundException e)
+                {
+                    e.printStackTrace();
+                }
+                break;
+
+
+            case "threat":
+                if (!sender.canUseCommand(2, getName()))
+                {
+                    notifyCommandListener(sender, this, "commands.generic.permission");
+                    return;
+                }
+
+                if (args.length != 4)
+                {
+                    notifyCommandListener(sender, this, getUsage(sender));
+                    break;
+                }
+                Entity entity = FMLCommonHandler.instance().getMinecraftServerInstance().getEntityFromUuid(UUID.fromString(args[1]));
+                if (entity == null)
+                {
+                    notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.threatEntityMissing", args[1]);
+                    break;
+                }
+                if (!(entity instanceof EntityLivingBase))
+                {
+                    notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.threatEntityNotLivingBase", args[1]);
+                    break;
+                }
+                Entity target = FMLCommonHandler.instance().getMinecraftServerInstance().getEntityFromUuid(UUID.fromString(args[2]));
+                if (target == null)
+                {
+                    notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.threatEntityMissing", args[2]);
+                    break;
+                }
+                if (!(target instanceof EntityLivingBase))
+                {
+                    notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.threatEntityNotLivingBase", args[2]);
+                    break;
+                }
+                float amount;
+                try
+                {
+                    amount = Float.parseFloat(args[3]);
+                }
+                catch (NumberFormatException e)
+                {
+                    notifyCommandListener(sender, this, getUsage(sender));
+                    break;
+                }
+                if (amount < 0 || amount > 100)
+                {
+                    notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.threatInvalidAmount", args[2]);
+                    break;
+                }
+                Threat.set((EntityLivingBase) entity, (EntityLivingBase) target, amount);
+                break;
+
+
+            case "watchers":
+                if (sender instanceof EntityPlayerMP)
+                {
+                    if (listWatchers.contains(sender)) listWatchers.remove(sender);
+                    else listWatchers.add((EntityPlayerMP) sender);
+                }
+                else notifyCommandListener(sender, this, DynamicStealth.MODID + ".cmd.watchersNotPlayer", args[2]);
+                break;
+
+            default:
+                notifyCommandListener(sender, this, getUsage(sender));
+                break;
+        }
+    }
+}

@@ -1,0 +1,10 @@
+[
+  {
+    "modid": "teamytzrpg",
+    "name": "异天庄的RPG",
+    "description": "异天庄的RPG —— 功能性RPG模组：区域动画、NPC警戒机制等（开发中）。",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "authorList": ["ytzzhu"]
+  }
+]
